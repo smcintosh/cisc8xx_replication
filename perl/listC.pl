@@ -29,9 +29,12 @@ while (my ($codec, $vs) = each %clones){
 	my $res = $dbh->selectall_arrayref("SELECT type FROM ids WHERE id = \"$vs\"");
 	#if (@$res->[0][0] == 'C' || @$res->[0][0] == 'H' || @$res->[0][0] == 'J') {
 		my $code = decompress $codec;
+
+                # Looks for method headers and break them up into words
 		while ($code =~ /([A-Za-z0-9_]+)[ \t\n\r]*\(.*\)[ \t\n\r]*(throws[ \t\n\r]+[A-Za-z0-9_]+[ \t\n\r]*)?\{.*\}*/g) {
 			if (!grep( /$1/, @keywords)) {
 				print "$1\n";
+                                # DeCamel them or seperate underscore words
 				my @lineParsed = split(/(?<!^)(?=[A-Z])|_/,$1);
 	                        print "PRINTING\n";
         	                print "<";
@@ -42,6 +45,25 @@ while (my ($codec, $vs) = each %clones){
 
 			}
 		}
+
+                # Looks for comments in code and break them up into words
+		while ($code =~ /((?:\/\*(?:[^*]|(?:\*+[^*\/]))*\*+\/)|(?:\/\/.*))/g) {
+
+                    #Remove special characters from comment blocks
+                    my $commentBlocks = $1;
+                    $commentBlocks =~ s/\*|\/|}|-|=|\$|:|&|'|"|`|<|>|@|\[|\]|,|\\|{|}|\(|\)//g;
+
+                    #Break comment blocks into sentences
+                    my @sentences = split(/\.|;|!|\?/,$commentBlocks);
+
+                    #Split each of the sentences into words
+                    for my $i ( 0 .. $#sentences){
+                        my @words = split(/[\t\n\r ]+/,$sentences[$i]);
+                        print "\n\n";
+                    }
+		}
+
+
 	#} else {
 	#	print "SKIPPING\n";
 	#}
