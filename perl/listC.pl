@@ -10,7 +10,7 @@ my @keywords = ("abstract", "continue", "for", "new", "switch", "assert",
 	"instanceof", "return", "transient", "catch", "extends", "int", "short",
 	"try", "char", "final", "interface", "static", "void", "class",
 	"finally", "long", "strictfp", "volatile", "const", "float", "native",
-	"super", "while"};
+	"super", "while");
 
 my $b = new DB_File::HASHINFO;
 $b ->{cachesize}=1000000000;
@@ -30,7 +30,9 @@ while (my ($codec, $vs) = each %clones){
 	#if (@$res->[0][0] == 'C' || @$res->[0][0] == 'H' || @$res->[0][0] == 'J') {
 		my $code = decompress $codec;
 		while ($code =~ /([A-Za-z0-9_]+)[ \t\n\r]*\(.*\)[ \t\n\r]*(throws[ \t\n\r]+[A-Za-z0-9_]+[ \t\n\r]*)?\{.*\}*/g) {
-			print "$1\n";
+			if (!grep( /$1/, @keywords)) {
+				print "$1\n";
+			}
 		}
 	#} else {
 	#	print "SKIPPING\n";
