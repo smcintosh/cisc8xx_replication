@@ -32,6 +32,14 @@ while (my ($codec, $vs) = each %clones){
 		while ($code =~ /([A-Za-z0-9_]+)[ \t\n\r]*\(.*\)[ \t\n\r]*(throws[ \t\n\r]+[A-Za-z0-9_]+[ \t\n\r]*)?\{.*\}*/g) {
 			if (!grep( /$1/, @keywords)) {
 				print "$1\n";
+				my @lineParsed = split(/(?<!^)(?=[A-Z])|_/,$1);
+	                        print "PRINTING\n";
+        	                print "<";
+                	        for my $i ( 0 .. $#lineParsed){
+                        	        print "$lineParsed[$i],";
+                        	}
+                        	print ">\n";
+
 			}
 		}
 	#} else {
