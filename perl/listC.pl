@@ -46,27 +46,27 @@ while (my ($codec, $vs) = each %clones){
 
     	print "PRINTING COMMENTS\n\n";
 
-	# Looks for comments in code and break them up into words
-	while ($code =~ /((?:\/\*(?:[^*]|(?:\*+[^*\/]))*\*+\/)|(?:\/\/.*))/g) {
+        # Looks for comments in code and break them up into words
+        while ($code =~ /((?:\/\*(?:[^*]|(?:\*+[^*\/]))*\*+\/)|(?:\/\/.*))/g) {
 
-		#Remove special characters from comment blocks
-		my $commentBlocks = $1;
-		$commentBlocks =~ s/\*|\/|}|-|=|\$|:|&|'|"|`|<|>|@|\[|\]|,|\\|{|}|\(|\)//g;
+            #Remove special characters from comment blocks
+            my $commentBlocks = $1;
+            $commentBlocks =~ s/\*|\/|}|-|=|\$|:|&|'|"|`|<|>|@|\[|\]|,|\\|{|}|\(|\)//g;
 
-		#Break comment blocks into sentences
-		my @sentences = split(/\.|;|!|\?/,$commentBlocks);
+            #Break comment blocks into sentences
+            my @sentences = split(/\.|;|!|\?/,$commentBlocks);
 
-		#Split each of the sentences into words
-		for my $i ( 0 .. $#sentences){
-			my @words = split(/[\t\n\r ]+/,$sentences[$i]);
+            #Split each of the sentences into words
+            for my $i ( 0 .. $#sentences){
+                my @words = split(/[\t\n\r ]+/,$sentences[$i]);
 
-			#Print each word seperated by commas
-			for my $j (0 .. $#words){
-				print "$words[$j],";
-			}
-			print "\n";
-		}
-	}
+                #Print each word seperated by commas
+                for my $j (0 .. $#words){
+                    print "$words[$j],";
+                }
+                print "\n";
+            }
+        }
     } else {
 		print "SKIPPING\n";
     }
