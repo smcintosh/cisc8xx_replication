@@ -3,6 +3,33 @@ use DB_File;
 use Compress::LZF;
 use DBI;
 
+# Read the idx file into memory...
+my $idxpath = "/scratch1/AudrisData/ALL.idx";
+my %idxhash;
+open (IDXFILE, "<$idxpath") or die "Failed to open $idxpath\n";
+print "Reading IDX file into memory\n";
+while (<IDXFILE>) {
+    my $line = $_;
+    chomp($line);
+
+    my @line_pieces = split(/;/, $line);
+    my $idx = @line_pieces[0];
+
+    my $start_idx = 1;
+    if (@line_pieces[1] =~ /^[0-9]+$/) {
+        $start_idx = 2;
+    }
+
+    my @vals;
+    for my $i ($start_idx .. $#line_pieces) {
+        push(@vals, @line_pieces[$i]);
+    }
+
+    $idxhash{$idx} = [ @vals ];
+}
+close(IDXFILE);
+
+# Keywords to skip
 my @keywords = ("abstract", "continue", "for", "new", "switch", "assert",
     "default", "goto", "package", "synchronized", "boolean", "do", "if",
     "private", "this", "break", "double", "implements", "protected", "throw",
@@ -11,6 +38,7 @@ my @keywords = ("abstract", "continue", "for", "new", "switch", "assert",
     "final", "interface", "static", "void", "class", "finally", "long",
     "strictfp", "volatile", "const", "float", "native", "super", "while");
 
+# Boilerplate for access to the .db files.
 my $b = new DB_File::HASHINFO;
 $b ->{cachesize}=1000000000;
 $b ->{nelem} = 100000;
@@ -21,16 +49,22 @@ my (%clones);
 tie %clones, "DB_File", $fname, O_RDONLY, 0666, $b
     or die "cant open file  $fname\n";
 
+# Connect to the output database
 # TODO: Make DB path configurable
-my $dbh = DBI->connect("dbi:SQLite:dbname=/scratch1/shane/cisc8xx/replication/ids", "", "") || die "Cannot connect: $DBI::errstr";
 my $odbh = DBI->connect("dbi:SQLite:dbname=/scratch1/shane/cisc8xx/replication/word_seqs.db", "", "") || die "Cannot connect: $DBI::errstr";
 
-# Improve performance
+# Improve performance, sacrifice robustness
 $odbh->do("PRAGMA synchronous = OFF");
 
+# Loop through each entry in the db
 while (my ($codec, $vs) = each %clones){
-    my $res = $dbh->selectall_arrayref("SELECT type FROM ids WHERE id = \"$vs\"");
-    if (@$res->[0][0] == 'C' || @$res->[0][0] == 'H' || @$res->[0][0] == 'J') {
+    my @firstfilesplit = split(/\//,@{ $idxhash{$vs} }[0]);
+    my $firstfile = @firstfilesplit[$#firstfilesplit-1];
+    my @dotextsplit = split(/\./, $firstfile);
+    my $dotext = @dotextsplit[$#dotextsplit];
+
+    # look up id, get first file entry, check dot extention
+    if ($dotext eq "c" || $dotext eq "h" || $dotext eq "java") {
         my $code = decompress $codec;
 
     	print "$vs: methods\n";
@@ -78,5 +112,4 @@ while (my ($codec, $vs) = each %clones){
 }
 untie %clones;
 
-$dbh->disconnect;
 $odbh->disconnect;
