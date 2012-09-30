@@ -3,7 +3,15 @@ use DB_File;
 use Compress::LZF;
 use DBI;
 
+# Connect to the output database
+# TODO: Make DB path configurable
+my $odbh = DBI->connect("dbi:SQLite:dbname=/scratch1/shane/cisc8xx/replication/word_seqs.db", "", "") || die "Cannot connect: $DBI::errstr";
+
+# Improve performance, sacrifice robustness
+$odbh->do("PRAGMA synchronous = OFF");
+
 # Read the idx file into memory...
+# Create the id to project mapping
 my $idxpath = "/scratch1/AudrisData/ALL.idx";
 my %idxhash;
 open (IDXFILE, "<$idxpath") or die "Failed to open $idxpath\n";
@@ -26,6 +34,13 @@ while (<IDXFILE>) {
     }
 
     $idxhash{$idx} = [ @vals ];
+
+    foreach my $val (@vals) {
+        my $proj = $val;
+        $proj =~ s/\/.*$//g;
+
+        $odbh->do("INSERT OR IGNORE INTO proj_ids VALUES (\"$idx\", \"$proj\")");
+    }
 }
 close(IDXFILE);
 
@@ -48,13 +63,6 @@ my $fname="$ARGV[0]";
 my (%clones);
 tie %clones, "DB_File", $fname, O_RDONLY, 0666, $b
     or die "cant open file  $fname\n";
-
-# Connect to the output database
-# TODO: Make DB path configurable
-my $odbh = DBI->connect("dbi:SQLite:dbname=/scratch1/shane/cisc8xx/replication/word_seqs.db", "", "") || die "Cannot connect: $DBI::errstr";
-
-# Improve performance, sacrifice robustness
-$odbh->do("PRAGMA synchronous = OFF");
 
 # Loop through each entry in the db
 while (my ($codec, $vs) = each %clones){
