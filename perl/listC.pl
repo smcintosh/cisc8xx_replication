@@ -2,6 +2,7 @@ use strict;
 use DB_File;
 use Compress::LZF;
 use DBI;
+use Regexp::Common qw /comment/;
 
 # Connect to the output database
 # TODO: Make DB path configurable
@@ -71,7 +72,7 @@ while (my ($codec, $vs) = each %clones){
     my @dotextsplit = split(/\./, $firstfile);
     my $dotext = @dotextsplit[$#dotextsplit];
 
-    # look up id, get first file entry, check dot extention
+   # look up id, get first file entry, check dot extention
     if ($dotext eq "c" || $dotext eq "h" || $dotext eq "java") {
         my $code = decompress $codec;
 
@@ -87,17 +88,23 @@ while (my ($codec, $vs) = each %clones){
                 $lower =~ s/\s+$//; # remove trailing spaces
                 unless ($lower =~ /^\s*$/) {
                     $odbh->do("INSERT INTO word_seqs VALUES ('D', \"$vs\", \"$lower\")");
+#                    print "INSERT INTO word_seqs VALUES ('D', \"$vs\", \"$lower\")";
+
                 }
         	}
     	}
 
     	print "$vs: comments\n";
 
+
+
         # Looks for comments in code and break them up into words
-        while ($code =~ /((?:\/\*(?:[^*]|(?:\*+[^*\/]))*\*+\/)|(?:\/\/.*))/g) {
+        my @commentArray =  getComments($code);
+
+        foreach my $comment (@commentArray){
 
             #Remove special characters from comment blocks
-            my $commentBlocks = $1;
+            my $commentBlocks = $comment;
             $commentBlocks =~ s/\*|\/|}|-|=|\$|:|&|'|"|`|<|>|@|\[|\]|,|\\|{|}|\(|\)|\|//g;
 
             #Break comment blocks into sentences
@@ -111,9 +118,11 @@ while (my ($codec, $vs) = each %clones){
                 $lower =~ s/\s+$//; # remove trailing spaces
                 unless ($lower =~ /^\s*$/) {
                     $odbh->do("INSERT INTO word_seqs VALUES ('M', \"$vs\", \"$lower\")");
+#                    print "INSERT INTO word_seqs VALUES ('M', \"$vs\", \"$lower\")";
                 }
             }
         }
+
     } else {
 		print "$vs: skipping\n";
     }
@@ -121,3 +130,10 @@ while (my ($codec, $vs) = each %clones){
 untie %clones;
 
 $odbh->disconnect;
+
+
+sub getComments{
+    my $wordsIn = shift;
+    my @arr = $wordsIn =~  m/$RE{comment}{Java}/g;
+    return @arr;
+}
