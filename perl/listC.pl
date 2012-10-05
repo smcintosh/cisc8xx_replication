@@ -4,12 +4,19 @@ use Compress::LZF;
 use DBI;
 use Regexp::Common qw /comment/;
 
+# TODO: Make configurable
+my $build_proj_ids = 0;
+
 # Connect to the output database
 # TODO: Make DB path configurable
 my $odbh = DBI->connect("dbi:SQLite:dbname=/scratch1/shane/cisc8xx/replication/word_seqs.db", "", "") || die "Cannot connect: $DBI::errstr";
 
 # Improve performance, sacrifice robustness
 $odbh->do("PRAGMA synchronous = OFF");
+
+# Create the tables if necessary
+$odbh->do("CREATE TABLE IF NOT EXISTS proj_ids (id VARCHAR[20], project VARCHAR[80])");
+$odbh->do("CREATE TABLE IF NOT EXISTS word_seqs(type CHAR, id VARCHAR[20], seq VARCHAR[2000])");
 
 # Read the idx file into memory...
 # Create the id to project mapping
@@ -36,11 +43,13 @@ while (<IDXFILE>) {
 
     $idxhash{$idx} = [ @vals ];
 
-    foreach my $val (@vals) {
-        my $proj = $val;
-        $proj =~ s/\/.*$//g;
+    if ($build_proj_ids) {
+        foreach my $val (@vals) {
+            my $proj = $val;
+            $proj =~ s/\/.*$//g;
 
-        $odbh->do("INSERT OR IGNORE INTO proj_ids VALUES (\"$idx\", \"$proj\")");
+            $odbh->do("INSERT OR IGNORE INTO proj_ids VALUES (\"$idx\", \"$proj\")");
+        }
     }
 }
 close(IDXFILE);
@@ -88,7 +97,6 @@ while (my ($codec, $vs) = each %clones){
                 $lower =~ s/\s+$//; # remove trailing spaces
                 unless ($lower =~ /^\s*$/) {
                     $odbh->do("INSERT INTO word_seqs VALUES ('D', \"$vs\", \"$lower\")");
-#                    print "INSERT INTO word_seqs VALUES ('D', \"$vs\", \"$lower\")";
 
                 }
         	}
@@ -118,7 +126,6 @@ while (my ($codec, $vs) = each %clones){
                 $lower =~ s/\s+$//; # remove trailing spaces
                 unless ($lower =~ /^\s*$/) {
                     $odbh->do("INSERT INTO word_seqs VALUES ('M', \"$vs\", \"$lower\")");
-#                    print "INSERT INTO word_seqs VALUES ('M', \"$vs\", \"$lower\")";
                 }
             }
         }
