@@ -102,7 +102,7 @@ counter = 0
 counterRPair=0
 
 projectseqs.each do |id, type, sequence|
-    if(sequence.size >= shortest && sequence.size <= longest)
+    if(sequence.split.size >= shortest && sequence.split.size <= longest)
 	    to_compare = Set.new()
 
 	    sequence.split.each do |word|
@@ -113,7 +113,7 @@ projectseqs.each do |id, type, sequence|
 		to_compare.merge(wordhash[word])
 	    end
 	    to_compare.each do |sid|
-		diff = sequence.size - projectseqs[sid][2].size
+		diff = sequence.split.size - projectseqs[sid][2].split.size
                  if(gap <= diff.abs)
 			simMeasure = SimilarityMeasure(sequence,projectseqs[sid][2])
 			if(simMeasure > threshold && simMeasure != 1.0)
