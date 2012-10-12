@@ -17,6 +17,37 @@ def SimilarityMeasure(originSeq,compareSeq)
     return intersect.size.to_f/length.to_f
 end
 
+def LongestCommonSubsequenceWord(arr1,arr2)
+  solutions = []
+  return lcsWord(0,0)
+  def lcsWord(start1,start2)
+    result = ""
+    remainder1 = ""
+    remainder2 = ""
+    index = start1 + "," + start2
+    if(solutions[index] != null)
+      return solutions[index]
+    end
+  if(start1 == arr1.size || start2 == arr2.size)
+    result = []
+  elsif ( arr1[start1] == arr2[start2])
+    result = []
+    result[0] = arr1[start1]
+    result = result.concat(lcsWord(start1 + 1,start2 + 1))
+  else
+    remainder1 = lcsWord(start1 + 1,start2)
+    remainder2 = lcsWord(start1, start2 + 1)
+    if(remainder1.size > remainder2.size)
+      result = remainder1
+    else
+      result = remainder2
+    end
+  end
+  solutions[index] = result
+  return result
+  end
+end
+
 def lcs(a, b)
     lengths = Array.new(a.size+1) { Array.new(b.size+1) { 0 } }
     # row 0 and column 0 are initialized to 0 already
@@ -47,10 +78,12 @@ def lcs(a, b)
     end
     result.reverse
 end
+
 def rpairs(originS,compareS,lcsS)
     origin = originS.split
     compare = compareS.split
-    lcs = lcsS.split
+    #lcs = lcsS.split
+    lcs = lcsS
     length = 0
     if(origin.size < compare.size)
         length = origin.size
@@ -149,11 +182,13 @@ projectseqs.each do |id, type, sequence|
                  if(gap <= diff.abs)
 			simMeasure = SimilarityMeasure(sequence,projectseqs[sid][2])
 			if(simMeasure > threshold && simMeasure != 1.0)
-			    print "Sequence: #{sequence}\n"
-			    print "Compare with: #{projectseqs[sid][2]}\n"
+			    print "Sequence: #{sequence.split.inspect}\n"
+			    print "Compare with: #{projectseqs[sid][2].split.inspect}\n"
 		   	    print "Similarity: #{simMeasure}\n"
-			    lcs = lcs(sequence,projectseqs[sid][2])
-			    print "LCS: #{lcs}\n"
+			    #lcs = lcs(sequence,projectseqs[sid][2])
+			    #lcs = sequence.split & projectseqs[sid][2].split
+                            lcs = LongestCommonSubsequenceWord(sequence.split,projectseqs[sid][2].split)
+                            print "LCS: #{lcs.inspect}\n"
 			    rpairs = rpairs(sequence,projectseqs[sid][2],lcs)
                             print "Actual RPairs: #{rpairs.inspect}\n\n"
 			end
