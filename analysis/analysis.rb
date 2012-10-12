@@ -2,6 +2,8 @@
 
 require 'set'
 require './WordSequenceDatabase.rb'
+require './LCS.rb'
+require './Cutoffs.rb'
 
 def SimilarityMeasure(originSeq,compareSeq)
     origin = originSeq.split
@@ -17,72 +19,9 @@ def SimilarityMeasure(originSeq,compareSeq)
     return intersect.size.to_f/length.to_f
 end
 
-def LongestCommonSubsequenceWord(arr1,arr2)
-  solutions = []
-  return lcsWord(0,0)
-  def lcsWord(start1,start2)
-    result = ""
-    remainder1 = ""
-    remainder2 = ""
-    index = start1 + "," + start2
-    if(solutions[index] != null)
-      return solutions[index]
-    end
-  if(start1 == arr1.size || start2 == arr2.size)
-    result = []
-  elsif ( arr1[start1] == arr2[start2])
-    result = []
-    result[0] = arr1[start1]
-    result = result.concat(lcsWord(start1 + 1,start2 + 1))
-  else
-    remainder1 = lcsWord(start1 + 1,start2)
-    remainder2 = lcsWord(start1, start2 + 1)
-    if(remainder1.size > remainder2.size)
-      result = remainder1
-    else
-      result = remainder2
-    end
-  end
-  solutions[index] = result
-  return result
-  end
-end
-
-def lcs(a, b)
-    lengths = Array.new(a.size+1) { Array.new(b.size+1) { 0 } }
-    # row 0 and column 0 are initialized to 0 already
-    a.split('').each_with_index { |x, i|
-        b.split('').each_with_index { |y, j|
-            if x == y
-                lengths[i+1][j+1] = lengths[i][j] + 1
-            else
-                lengths[i+1][j+1] = \
-                    [lengths[i+1][j], lengths[i][j+1]].max
-            end
-        }
-    }
-    # read the substring out from the matrix
-    result = ""
-    x, y = a.size, b.size
-    while x != 0 and y != 0
-        if lengths[x][y] == lengths[x-1][y]
-            x -= 1
-        elsif lengths[x][y] == lengths[x][y-1]
-            y -= 1
-        else
-            # assert a[x-1] == b[y-1]
-            result << a[x-1]
-            x -= 1
-            y -= 1
-        end
-    end
-    result.reverse
-end
-
 def rpairs(originS,compareS,lcsS)
     origin = originS.split
     compare = compareS.split
-    #lcs = lcsS.split
     lcs = lcsS
     length = 0
     if(origin.size < compare.size)
@@ -127,10 +66,6 @@ def rpairs(originS,compareS,lcsS)
     end
     return rpairs
 end
-shortest=4
-longest=10
-gap = 3
-threshold=0.7
 
 db = WordSequenceDatabase.new("/scratch2/cisc835/replication/word_seqs.db")
 
@@ -166,52 +101,49 @@ end
 counter = 0
 counterRPair=0
 
-projectseqs.each do |id, type, sequence|
-    if(sequence.split.size >= shortest && sequence.split.size <= longest)
-	    to_compare = Set.new()
+cutoffs = {
+    "MM" => Cutoffs.new(4, 10, 3, 0.7),
+    "DD" => Cutoffs.new(2, 4, 0, 0.5),
+    "MD" => Cutoffs.new(2, 6, 1, 0.6),
+    "DM" => Cutoffs.new(2, 6, 1, 0.6)
+}
 
-	    sequence.split.each do |word|
-		word = word.strip
+projectseqs.each do |id, type, sequence|
+	to_compare = Set.new()
+
+    sequence.split.each do |word|
+        word = word.strip
 
 		next if (stopwords.include?(word))
 
 		to_compare.merge(wordhash[word])
-	    end
-	    to_compare.each do |sid|
-		diff = sequence.split.size - projectseqs[sid][2].split.size
-                 if(gap <= diff.abs)
-			simMeasure = SimilarityMeasure(sequence,projectseqs[sid][2])
-			if(simMeasure > threshold && simMeasure != 1.0)
-			    print "Sequence: #{sequence.split.inspect}\n"
-			    print "Compare with: #{projectseqs[sid][2].split.inspect}\n"
-		   	    print "Similarity: #{simMeasure}\n"
-			    #lcs = lcs(sequence,projectseqs[sid][2])
-			    #lcs = sequence.split & projectseqs[sid][2].split
-                            lcs = LongestCommonSubsequenceWord(sequence.split,projectseqs[sid][2].split)
-                            print "LCS: #{lcs.inspect}\n"
-			    rpairs = rpairs(sequence,projectseqs[sid][2],lcs)
-                            print "Actual RPairs: #{rpairs.inspect}\n\n"
-			end
-		end
-	    end
-	    #puts
+	end
 
-	    #print "#{counter} => "
-	    to_compare.each do |sid|
-		if (sid != counter)
-	    #        print "#{sid} "
-		end
+	to_compare.each do |sid|
+        mycutoffs = cutoffs[projectseqs[sid][1] + type]
+        my_sequence = sequence.split
+        other_sequence = projectseqs[sid][2].split
+		diff = (my_sequence.size - other_sequence.size).abs
+
+        next if (my_sequence.length < mycutoffs.shortest ||
+            other_sequence.length < mycutoffs.shortest ||
+            my_sequence.length > mycutoffs.longest ||
+            other_sequence.length > mycutoffs.longest ||
+            diff > mycutoffs.gap)
+
+	    simMeasure = SimilarityMeasure(sequence,projectseqs[sid][2])
+		if (simMeasure > mycutoffs.threshold &&
+            simMeasure != 1.0)
+
+		    print "Sequence: #{sequence.split.inspect}\n"
+		    print "Compare with: #{projectseqs[sid][2].split.inspect}\n"
+		    print "Similarity: #{simMeasure}\n"
+            lcs = LCS.new(sequence.split,projectseqs[sid][2].split).calculate
+            print "LCS: #{lcs.inspect}\n"
+			rpairs = rpairs(sequence,projectseqs[sid][2],lcs)
+            print "Actual RPairs: #{rpairs.inspect}\n\n"
 	    end
-	    #puts
     end
 
     counter += 1
 end
-
-counter = 0
-projectseqs.each do |id, type, sequence|
-    #puts "#{counter} => #{sequence}"
-    counter += 1
-end
-
-
