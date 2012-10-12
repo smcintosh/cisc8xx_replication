@@ -4,28 +4,14 @@ require 'set'
 require './WordSequenceDatabase.rb'
 
 def SimilarityMeasure(originSeq,compareSeq)
-    originA = originSeq.split
-    compareA = compareSeq.split
-    originS = Set.new(originA)
-    compareS = Set.new(compareA)
-    #print "origin length: #{originS.size}"
-    #puts
-    #print "origin: #{originS}"
-    #puts
-    #print "compare length: #{compareS.size}"
-    #puts
-    #print "compare: #{compareS}" 
-    intersect = originS & compareS
-    #puts
-    #print "intersect length: #{intersect.size}"
-    #puts
-    #print "intersect: #{intersect}"
-    #puts
+    origin = originSeq.split
+    compare = compareSeq.split
+    intersect = origin & compare
     length = 0
-    if(originS.size > compareS.size)
-        length = originS.size
+    if(origin.size > compare.size)
+        length = compare.size
     else
-        length = compareS.size
+        length = origin.size
     end
     
     return intersect.size.to_f/length.to_f
@@ -61,7 +47,53 @@ def lcs(a, b)
     end
     result.reverse
 end
-
+def rpairs(originS,compareS,lcsS)
+    origin = originS.split
+    compare = compareS.split
+    lcs = lcsS.split
+    length = 0
+    if(origin.size < compare.size)
+        length = origin.size
+    else
+        length = compare.size
+    end
+    rpairs = []
+    rpairsCount = 0
+    lcsCount = 0
+    origCount = 0
+    compCount = 0
+    until (origCount >= length || compCount >= length) do
+        #print "#{lcsCount},#{lcs.size}\n"
+        if(lcsCount >= lcs.size)
+            if(origin[origCount] != compare[compCount])
+                rpairs[rpairsCount] = [origin[origCount],compare[compCount]]
+                rpairsCount += 1
+            end
+            origCount += 1
+            compCount += 1
+        else
+        if(lcs[lcsCount] == origin[origCount] && lcs[lcsCount] == compare[compCount]) 
+            #print "lcs[#{lcsCount}]=#{lcs[lcsCount]},origin[#{origCount}]=#{origin[origCount]},comp[#{compCount}]=#{compare[compCount]}\n"
+            origCount += 1
+            compCount += 1
+            lcsCount += 1
+        elsif(lcs[lcsCount] != origin[origCount] && lcs[lcsCount] != compare[compCount])
+            #print "lcs[#{lcsCount}]=#{lcs[lcsCount]},origin[#{origCount}]=#{origin[origCount]},comp[#{compCount}]=#{compare[compCount]}\n"
+            rpairs[rpairsCount] = [origin[origCount],compare[compCount]]
+            rpairsCount += 1
+            origCount += 1
+            compCount += 1
+        elsif(lcs[lcsCount] != origin[origCount] && lcs[lcsCount] == compare[compCount])
+            #print "lcs[#{lcsCount}]=#{lcs[lcsCount]},origin[#{origCount}]=#{origin[origCount]},comp[#{compCount}]=#{compare[compCount]}\n"
+            origCount += 1
+        elsif(lcs[lcsCount] == origin[origCount] && lcs[lcsCount] != compare[compCount])
+            #print "lcs[#{lcsCount}]=#{lcs[lcsCount]},origin[#{origCount}]=#{origin[origCount]},comp[#{compCount}]=#{compare[compCount]}\n"
+            compCount += 1
+        end
+        end
+    end
+    return rpairs
+end
 shortest=4
 longest=10
 gap = 3
@@ -95,7 +127,7 @@ db.each_sequence("FLOSSmole") do |id, type, sequence|
     end
 
     counter += 1
-    break if (counter == 3000)
+    break if (counter == 500)
 end
 
 counter = 0
@@ -117,21 +149,13 @@ projectseqs.each do |id, type, sequence|
                  if(gap <= diff.abs)
 			simMeasure = SimilarityMeasure(sequence,projectseqs[sid][2])
 			if(simMeasure > threshold && simMeasure != 1.0)
-			    print "Sequence: #{sequence}"
-			    puts
-			    print "Compare with: #{projectseqs[sid][2]}"
-			    puts
-		   	    print "Similarity: #{simMeasure}"
-			    puts
+			    print "Sequence: #{sequence}\n"
+			    print "Compare with: #{projectseqs[sid][2]}\n"
+		   	    print "Similarity: #{simMeasure}\n"
 			    lcs = lcs(sequence,projectseqs[sid][2])
-			    print "LCS: #{lcs}"
-			    puts
-			    diff1 = sequence;
-			    diff2  =projectseqs[sid][2]
-			    diff1.gsub(lcs,"")
-			    diff2.gsub(lcs,"")
-			    print "RPairs = #{diff1} and #{diff2}"
-			    puts
+			    print "LCS: #{lcs}\n"
+			    rpairs = rpairs(sequence,projectseqs[sid][2],lcs)
+                            print "Actual RPairs: #{rpairs.inspect}\n\n"
 			end
 		end
 	    end
