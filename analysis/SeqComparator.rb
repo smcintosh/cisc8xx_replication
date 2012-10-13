@@ -42,16 +42,12 @@ class SeqComparator
     def similarity()
         return 1 if (@seq1.join == @seq2.join)
 
-        intersect = @seq1 & @seq2
-        union = @seq1 | @seq2
-        return 1 if (union == intersect)
-
         length = @seq1.size
         if (@seq1.size > @seq2.size)
             length = @seq2.size
         end
     
-        return intersect.size.to_f/length.to_f
+        return self.lcs.size.to_f/length.to_f
     end
 
     def rpairs()

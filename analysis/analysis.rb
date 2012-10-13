@@ -6,6 +6,8 @@ require './SeqComparator.rb'
 require './Cutoffs.rb'
 require './hacks.rb'
 
+debug = false
+
 db = WordSequenceDatabase.new("/scratch2/cisc835/replication/word_seqs.db")
 
 counter = 0
@@ -96,13 +98,15 @@ projectseqs.each do |id, type, sequence|
 		if (simMeasure > my_cutoffs.threshold &&
             simMeasure != 1.0)
 
-		    print "Sequence: #{my_sequence.inspect}\n"
-		    print "Compare with: #{other_sequence.inspect}\n"
-		    print "Similarity: #{simMeasure}\n"
-            lcs = seqcompare.lcs
-            print "LCS: #{lcs.inspect}\n"
 			rpairs = seqcompare.rpairs()
-            print "Actual RPairs: #{rpairs.inspect}\n\n"
+            if (debug)
+		        print "Sequence: #{my_sequence.inspect}\n"
+		        print "Compare with: #{other_sequence.inspect}\n"
+		        print "Similarity: #{simMeasure}\n"
+                lcs = seqcompare.lcs
+                print "LCS: #{lcs.inspect}\n"
+                print "Actual RPairs: #{rpairs.inspect}\n\n"
+            end
 	    end
     end
 
