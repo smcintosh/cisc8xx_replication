@@ -2,79 +2,9 @@
 
 require 'set'
 require './WordSequenceDatabase.rb'
-require './LCS.rb'
+require './SeqComparator.rb'
 require './Cutoffs.rb'
 require './hacks.rb'
-
-def SimilarityMeasure(originSeq,compareSeq)
-    return 1 if (originSeq == compareSeq)
-
-    origin = originSeq.split
-    compare = compareSeq.split
-    intersect = origin & compare
-    length = 0
-    union = origin | compare
-    if(union == intersect)
-        return 1.0
-    end
-
-    if(origin.size > compare.size)
-        length = compare.size
-    else
-        length = origin.size
-    end
-    
-    return intersect.size.to_f/length.to_f
-end
-
-def rpairs(originS,compareS,lcsS)
-    origin = originS.split
-    compare = compareS.split
-    lcs = lcsS
-    length = 0
-    if(origin.size < compare.size)
-        length = origin.size
-    else
-        length = compare.size
-    end
-    rpairs = []
-    rpairsCount = 0
-    lcsCount = 0
-    origCount = 0
-    compCount = 0
-    shorterCount = 0
-    until (shorterCount >= length ) do
-         if(lcsCount >= lcs.size) 
-            if(origin[origCount] != compare[compCount])
-                rpairs[rpairsCount] = [origin[origCount],compare[compCount]]
-                rpairsCount += 1
-            end
-            origCount += 1
-            compCount += 1
-        else
-        if(lcs[lcsCount] == origin[origCount] && lcs[lcsCount] == compare[compCount]) 
-            origCount += 1
-            compCount += 1
-            lcsCount += 1
-        elsif(lcs[lcsCount] != origin[origCount] && lcs[lcsCount] != compare[compCount])
-            rpairs[rpairsCount] = [origin[origCount],compare[compCount]]
-            rpairsCount += 1
-            origCount += 1
-            compCount += 1
-        elsif(lcs[lcsCount] != origin[origCount] && lcs[lcsCount] == compare[compCount])
-            origCount += 1
-        elsif(lcs[lcsCount] == origin[origCount] && lcs[lcsCount] != compare[compCount])
-            compCount += 1
-        end
-        end
-    if(origin.size < compare.size)
-      shorterCount = origCount
-    else
-      shorterCount = compCount
-    end
-    end
-    return rpairs
-end
 
 db = WordSequenceDatabase.new("/scratch2/cisc835/replication/word_seqs.db")
 
@@ -147,28 +77,31 @@ projectseqs.each do |id, type, sequence|
 
         other_sequence = projectseqs[sid][2].split
 
+        # Skip if _way_ too long or _way_ too short
         next if (other_sequence.length < min_shortest ||
             other_sequence.length > max_longest)
 
         my_cutoffs = cutoffs[projectseqs[sid][1] + type]
 		diff = (my_sequence.size - other_sequence.size).abs
 
+        # Skip if too long or too short
         next if (my_sequence.length < my_cutoffs.shortest ||
             other_sequence.length < my_cutoffs.shortest ||
             my_sequence.length > my_cutoffs.longest ||
             other_sequence.length > my_cutoffs.longest ||
             diff > my_cutoffs.gap)
 
-	    simMeasure = SimilarityMeasure(sequence,projectseqs[sid][2])
+        seqcompare = SeqComparator.new(my_sequence, other_sequence)
+	    simMeasure = seqcompare.similarity
 		if (simMeasure > my_cutoffs.threshold &&
             simMeasure != 1.0)
 
 		    print "Sequence: #{my_sequence.inspect}\n"
 		    print "Compare with: #{other_sequence.inspect}\n"
 		    print "Similarity: #{simMeasure}\n"
-            lcs = LCS.new(my_sequence,other_sequence).calculate
+            lcs = seqcompare.lcs
             print "LCS: #{lcs.inspect}\n"
-			rpairs = rpairs(sequence,projectseqs[sid][2],lcs)
+			rpairs = seqcompare.rpairs()
             print "Actual RPairs: #{rpairs.inspect}\n\n"
 	    end
     end
