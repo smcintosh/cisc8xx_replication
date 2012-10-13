@@ -22,8 +22,8 @@ File.read("stopwords").each_line do |line|
     stopwords.add(line)
 end
 
-db.each_sequence("FLOSSmole") do |id, type, sequence|
-#db.each_sequence("2d3d.googlcode.com") do |id, type, sequence|
+#db.each_sequence("FLOSSmole") do |id, type, sequence|
+db.each_sequence("2d3d.googlcode.com") do |id, type, sequence|
     projectseqs[counter] = [id, type, sequence]
 
     sequence.split.each do |word|
@@ -38,7 +38,6 @@ db.each_sequence("FLOSSmole") do |id, type, sequence|
     end
 
     counter += 1
-    break if (counter == 10000)
 end
 
 cutoffs = {
@@ -103,7 +102,6 @@ projectseqs.each do |id, type, sequence|
             simMeasure != 1.0)
 
 			seqcompare.rpairs.each do |pair|
-                puts "#{pair.inspect}"
                 next if (stopwords.include?(pair[0]) ||
                     stopwords.include?(pair[1]) ||
                     pair[0].stem == pair[1].stem)
