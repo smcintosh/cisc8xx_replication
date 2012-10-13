@@ -1,5 +1,7 @@
 #!/usr/bin/ruby
 
+require 'rubygems'
+require 'stemmer'
 require 'set'
 require './WordSequenceDatabase.rb'
 require './SeqComparator.rb'
@@ -36,7 +38,7 @@ db.each_sequence("FLOSSmole") do |id, type, sequence|
     end
 
     counter += 1
-    break if (counter == 500)
+    break if (counter == 10000)
 end
 
 cutoffs = {
@@ -55,6 +57,7 @@ cutoffs.each do |key, val|
 end
 
 counter = 0
+rpair_list = {}
 
 projectseqs.each do |id, type, sequence|
     my_sequence = sequence.split
@@ -75,7 +78,7 @@ projectseqs.each do |id, type, sequence|
 
 	to_compare.each do |sid|
         # Don't compare against yourself
-        next if (sid == counter)
+        next if (sid.to_i <= counter.to_i)
 
         other_sequence = projectseqs[sid][2].split
 
@@ -83,7 +86,8 @@ projectseqs.each do |id, type, sequence|
         next if (other_sequence.length < min_shortest ||
             other_sequence.length > max_longest)
 
-        my_cutoffs = cutoffs[projectseqs[sid][1] + type]
+        compare_type = projectseqs[sid][1] + type
+        my_cutoffs = cutoffs[compare_type]
 		diff = (my_sequence.size - other_sequence.size).abs
 
         # Skip if too long or too short
@@ -98,7 +102,25 @@ projectseqs.each do |id, type, sequence|
 		if (simMeasure > my_cutoffs.threshold &&
             simMeasure != 1.0)
 
-			rpairs = seqcompare.rpairs()
+			seqcompare.rpairs.each do |pair|
+                puts "#{pair.inspect}"
+                next if (stopwords.include?(pair[0]) ||
+                    stopwords.include?(pair[1]) ||
+                    pair[0].stem == pair[1].stem)
+
+                sorted = pair.sort
+                if (!rpair_list[compare_type])
+                    rpair_list[compare_type] = {}
+                end
+                my_rpair_list = rpair_list[compare_type]
+
+                rpair_idx = sorted[0]+","+sorted[1] 
+                if (!my_rpair_list[rpair_idx])
+                    my_rpair_list[rpair_idx] = 0
+                end
+                my_rpair_list[rpair_idx] += 1
+            end
+
             if (debug)
 		        print "Sequence: #{my_sequence.inspect}\n"
 		        print "Compare with: #{other_sequence.inspect}\n"
@@ -111,4 +133,10 @@ projectseqs.each do |id, type, sequence|
     end
 
     counter += 1
+end
+
+rpair_list.each do |type, rpairs|
+    rpairs.each do |key, val|
+        puts "#{type} - #{key} - #{val}"
+    end
 end
