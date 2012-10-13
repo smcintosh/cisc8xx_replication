@@ -6,6 +6,8 @@ require './LCS.rb'
 require './Cutoffs.rb'
 
 def SimilarityMeasure(originSeq,compareSeq)
+    return 1 if (originSeq == compareSeq)
+
     origin = originSeq.split
     compare = compareSeq.split
     intersect = origin & compare
@@ -14,6 +16,7 @@ def SimilarityMeasure(originSeq,compareSeq)
     if(union == intersect)
         return 1.0
     end
+
     if(origin.size > compare.size)
         length = compare.size
     else
@@ -103,15 +106,14 @@ db.each_sequence("FLOSSmole") do |id, type, sequence|
     break if (counter == 500)
 end
 
-counter = 0
-counterRPair=0
-
 cutoffs = {
     "MM" => Cutoffs.new(4, 10, 3, 0.7),
     "DD" => Cutoffs.new(2, 4, 0, 0.5),
     "MD" => Cutoffs.new(2, 6, 1, 0.6),
     "DM" => Cutoffs.new(2, 6, 1, 0.6)
 }
+
+counter = 0
 
 projectseqs.each do |id, type, sequence|
 	to_compare = Set.new()
@@ -125,6 +127,9 @@ projectseqs.each do |id, type, sequence|
 	end
 
 	to_compare.each do |sid|
+        # Don't compare against yourself
+        next if (sid == counter)
+
         mycutoffs = cutoffs[projectseqs[sid][1] + type]
         my_sequence = sequence.split
         other_sequence = projectseqs[sid][2].split
@@ -140,10 +145,10 @@ projectseqs.each do |id, type, sequence|
 		if (simMeasure > mycutoffs.threshold &&
             simMeasure != 1.0)
 
-		    print "Sequence: #{sequence.split.inspect}\n"
-		    print "Compare with: #{projectseqs[sid][2].split.inspect}\n"
+		    print "Sequence: #{my_sequence.inspect}\n"
+		    print "Compare with: #{other_sequence.inspect}\n"
 		    print "Similarity: #{simMeasure}\n"
-            lcs = LCS.new(sequence.split,projectseqs[sid][2].split).calculate
+            lcs = LCS.new(my_sequence,other_sequence).calculate
             print "LCS: #{lcs.inspect}\n"
 			rpairs = rpairs(sequence,projectseqs[sid][2],lcs)
             print "Actual RPairs: #{rpairs.inspect}\n\n"
