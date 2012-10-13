@@ -10,6 +10,10 @@ def SimilarityMeasure(originSeq,compareSeq)
     compare = compareSeq.split
     intersect = origin & compare
     length = 0
+    union = origin | compare
+    if(union == intersect)
+        return 1.0
+    end
     if(origin.size > compare.size)
         length = compare.size
     else
@@ -34,9 +38,9 @@ def rpairs(originS,compareS,lcsS)
     lcsCount = 0
     origCount = 0
     compCount = 0
-    until (origCount >= length || compCount >= length) do
-        #print "#{lcsCount},#{lcs.size}\n"
-        if(lcsCount >= lcs.size)
+    shorterCount = 0
+    until (shorterCount >= length ) do
+         if(lcsCount >= lcs.size) 
             if(origin[origCount] != compare[compCount])
                 rpairs[rpairsCount] = [origin[origCount],compare[compCount]]
                 rpairsCount += 1
@@ -45,24 +49,25 @@ def rpairs(originS,compareS,lcsS)
             compCount += 1
         else
         if(lcs[lcsCount] == origin[origCount] && lcs[lcsCount] == compare[compCount]) 
-            #print "lcs[#{lcsCount}]=#{lcs[lcsCount]},origin[#{origCount}]=#{origin[origCount]},comp[#{compCount}]=#{compare[compCount]}\n"
             origCount += 1
             compCount += 1
             lcsCount += 1
         elsif(lcs[lcsCount] != origin[origCount] && lcs[lcsCount] != compare[compCount])
-            #print "lcs[#{lcsCount}]=#{lcs[lcsCount]},origin[#{origCount}]=#{origin[origCount]},comp[#{compCount}]=#{compare[compCount]}\n"
             rpairs[rpairsCount] = [origin[origCount],compare[compCount]]
             rpairsCount += 1
             origCount += 1
             compCount += 1
         elsif(lcs[lcsCount] != origin[origCount] && lcs[lcsCount] == compare[compCount])
-            #print "lcs[#{lcsCount}]=#{lcs[lcsCount]},origin[#{origCount}]=#{origin[origCount]},comp[#{compCount}]=#{compare[compCount]}\n"
             origCount += 1
         elsif(lcs[lcsCount] == origin[origCount] && lcs[lcsCount] != compare[compCount])
-            #print "lcs[#{lcsCount}]=#{lcs[lcsCount]},origin[#{origCount}]=#{origin[origCount]},comp[#{compCount}]=#{compare[compCount]}\n"
             compCount += 1
         end
         end
+    if(origin.size < compare.size)
+      shorterCount = origCount
+    else
+      shorterCount = compCount
+    end
     end
     return rpairs
 end
