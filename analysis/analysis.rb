@@ -4,6 +4,7 @@ require 'set'
 require './WordSequenceDatabase.rb'
 require './LCS.rb'
 require './Cutoffs.rb'
+require './hacks.rb'
 
 def SimilarityMeasure(originSeq,compareSeq)
     return 1 if (originSeq == compareSeq)
@@ -113,12 +114,26 @@ cutoffs = {
     "DM" => Cutoffs.new(2, 6, 1, 0.6)
 }
 
+# Calculate the shortest and longest values
+min_shortest = Integer::MAX
+max_longest = Integer::MIN
+cutoffs.each do |key, val|
+    min_shortest = val.shortest if (min_shortest > val.shortest)
+    max_longest = val.longest if (max_longest < val.longest)
+end
+
 counter = 0
 
 projectseqs.each do |id, type, sequence|
+    my_sequence = sequence.split
+
+    # Skip if sequence is smaller than the shorest short, or longer than the longest long
+    next if (my_sequence.length < min_shortest ||
+        my_sequence.length > max_longest)
+
 	to_compare = Set.new()
 
-    sequence.split.each do |word|
+    my_sequence.each do |word|
         word = word.strip
 
 		next if (stopwords.include?(word))
@@ -130,19 +145,22 @@ projectseqs.each do |id, type, sequence|
         # Don't compare against yourself
         next if (sid == counter)
 
-        mycutoffs = cutoffs[projectseqs[sid][1] + type]
-        my_sequence = sequence.split
         other_sequence = projectseqs[sid][2].split
+
+        next if (other_sequence.length < min_shortest ||
+            other_sequence.length > max_longest)
+
+        my_cutoffs = cutoffs[projectseqs[sid][1] + type]
 		diff = (my_sequence.size - other_sequence.size).abs
 
-        next if (my_sequence.length < mycutoffs.shortest ||
-            other_sequence.length < mycutoffs.shortest ||
-            my_sequence.length > mycutoffs.longest ||
-            other_sequence.length > mycutoffs.longest ||
-            diff > mycutoffs.gap)
+        next if (my_sequence.length < my_cutoffs.shortest ||
+            other_sequence.length < my_cutoffs.shortest ||
+            my_sequence.length > my_cutoffs.longest ||
+            other_sequence.length > my_cutoffs.longest ||
+            diff > my_cutoffs.gap)
 
 	    simMeasure = SimilarityMeasure(sequence,projectseqs[sid][2])
-		if (simMeasure > mycutoffs.threshold &&
+		if (simMeasure > my_cutoffs.threshold &&
             simMeasure != 1.0)
 
 		    print "Sequence: #{my_sequence.inspect}\n"
