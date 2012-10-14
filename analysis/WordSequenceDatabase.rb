@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'sqlite3'
+require './ProjData.rb'
 
 #
 # Class for connecting to the SQLite DB
@@ -9,17 +10,36 @@ class WordSequenceDatabase
 
     def initialize(db)
         @dbconn = SQLite3::Database.new(db)
+        @dbconn.execute("PRAGMA synchronous = OFF")
+        @dbconn.execute("PRAGMA journal_mode = MEMORY")
     end
 
-    def each_project
-        @dbconn.execute("SELECT DISTINCT pids.project FROM word_seqs ws, proj_ids pids WHERE pids.id = ws.id") do |row|
-            yield row
+    def each_project()
+        # Read the stopwords list
+        stopwords = Set.new()
+        File.read("stopwords").each_line do |line|
+            line = line.strip
+            stopwords.add(line)
         end
-    end
 
-    def each_sequence(project)
-        @dbconn.execute("SELECT ws.id, ws.type, ws.seq FROM word_seqs ws, proj_ids pids WHERE pids.id = ws.id AND pids.project = \"#{project}\"") do |row|
-            yield row[0], row[1], row[2]
+        pdata = nil
+        current_proj = ""
+        first = true
+        @dbconn.execute("SELECT pids.project, ws.id, ws.type, ws.seq FROM word_seqs ws, proj_ids pids WHERE pids.id = ws.id ORDER BY pids.project") do |row|
+            if (first)
+                current_proj = row[0]
+                pdata = ProjData.new(current_proj, stopwords)
+                first = false
+            elsif (row[0] != current_proj)
+                yield pdata
+                return # TODO REMOVE ME
+                current_proj = row[0]
+                pdata = ProjData.new(current_proj, stopwords)
+            else
+                pdata.add(row[1], row[2], row[3])
+            end
         end
+
+        yield pdata
     end
 end
