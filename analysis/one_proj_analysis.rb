@@ -12,10 +12,8 @@ require './hacks.rb'
 # MAIN LOOP
 #
 
-db = WordSequenceDatabase.new("/scratch3/shane/word_seqs.db.back")
+db = WordSequenceDatabase.new("/scratch3/shane/word_seqs.db")
 db.for_project("a2ps") do |pdata|
-    puts "Processing data"
-    STDOUT.flush
     pdata.process
 end
 

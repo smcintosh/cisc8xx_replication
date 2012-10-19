@@ -51,8 +51,6 @@ class WordSequenceDatabase
             stopwords.add(line)
         end
 
-        puts "Executing query"
-        STDOUT.flush
         pdata = ProjData.new(projname, stopwords)
         @dbconn.execute("SELECT ws.id, ws.type, ws.seq FROM word_seqs ws, proj_ids pids WHERE pids.id = ws.id AND pids.project = \"#{projname}\"") do |row|
             pdata.add(row[0], row[1], row[2])

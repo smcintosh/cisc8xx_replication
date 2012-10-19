@@ -112,6 +112,7 @@ class ProjData
             end
         end
 
+        puts "type,phrase1,phrase2,support,seq1,seq2"
         rpair_list.each do |type, rpairs|
             rpairs.each do |key, val|
                 example = rpair_examples[type][key]
