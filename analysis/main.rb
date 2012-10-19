@@ -19,7 +19,7 @@ num_procs = 0
 File.read("projlist").each_line do |project|
     if (num_procs < max_procs)
         project = project.strip
-        puts "Doing #{project}"
+        puts "Processing project: #{project}"
         STDOUT.flush
         Process.fork do
             db = WordSequenceDatabase.new("/scratch3/shane/word_seqs.db")

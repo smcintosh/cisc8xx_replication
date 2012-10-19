@@ -12,36 +12,7 @@ class WordSequenceDatabase
         @dbconn = SQLite3::Database.new(db)
     end
 
-    def each_project()
-        # Read the stopwords list
-        stopwords = Set.new()
-        File.read("stopwords").each_line do |line|
-            line = line.strip
-            stopwords.add(line)
-        end
-
-        pdata = nil
-        current_proj = ""
-        first = true
-        @dbconn.execute("SELECT pids.project, ws.id, ws.type, ws.seq FROM word_seqs ws, proj_ids pids WHERE pids.id = ws.id ORDER BY pids.project") do |row|
-            if (first)
-                current_proj = row[0]
-                pdata = ProjData.new(current_proj, stopwords)
-                first = false
-            elsif (row[0] != current_proj)
-                yield pdata
-                return # TODO REMOVE ME
-                current_proj = row[0]
-                pdata = ProjData.new(current_proj, stopwords)
-            else
-                pdata.add(row[1], row[2], row[3])
-            end
-        end
-
-        yield pdata
-    end
-
-    # Hack for quick results
+    # Get data for specified project
     def for_project(projname)
         # Read the stopwords list
         stopwords = Set.new()
