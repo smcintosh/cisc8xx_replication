@@ -10,7 +10,6 @@ class WordSequenceDatabase
 
     def initialize(db)
         @dbconn = SQLite3::Database.new(db)
-        @dbconn.execute("PRAGMA synchronous = OFF")
     end
 
     def each_project()
