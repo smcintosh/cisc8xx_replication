@@ -70,7 +70,7 @@ class SeqComparator
                seq2_idx += 1
            end
 
-           if (!seq1_phrase.empty? and !seq2_phrase.empty?)
+           if (!seq1_phrase.empty? and !seq2_phrase.empty? and !seq1_phrase.is_i? and !seq2_phrase.is_i?)
                rpairs.push([seq1_phrase.strip, seq2_phrase.strip])
            end
 

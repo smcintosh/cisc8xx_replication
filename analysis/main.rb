@@ -17,24 +17,25 @@ max_procs = 4
 
 num_procs = 0
 File.read("projlist").each_line do |project|
-    if (num_procs < max_procs)
-        project = project.strip
-        puts "Processing project: #{project}"
-        STDOUT.flush
-        Process.fork do
-            db = WordSequenceDatabase.new("/scratch3/shane/word_seqs.db")
-            $stdout.reopen("#{project}.log", "w")
-            db.for_project(project) do |pdata|
-                pdata.process
-                exit
-            end
-            db.close
-        end
-        num_procs += 1
-    else
+    if (num_procs >= max_procs)
         Process.wait
         num_procs -= 1
     end
+
+    project = project.strip
+    puts "Processing project: #{project}"
+    STDOUT.flush
+    Process.fork do
+        db = WordSequenceDatabase.new("/scratch3/shane/word_seqs.db")
+        $stdout.reopen("/dev/null", "w")
+        db.for_project(project) do |pdata|
+            pdata.process
+        end
+
+        db.close
+        exit
+    end
+    num_procs += 1
 end
 
 Process.waitall
