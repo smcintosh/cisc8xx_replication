@@ -53,40 +53,29 @@ class SeqComparator
     def rpairs()
         lcs = self.lcs
 
-        seq1_phrases = []
-        seq2_phrases = []
-
-        phrase = ""
-        @seq1.each do |word|
-            if (!lcs.include?(word))
-                phrase += "#{word} "
-            else
-                seq1_phrases.push(phrase.strip) if (!phrase.strip.empty?)
-                phrase = ""
-            end
-        end
-
-        seq1_phrases.push(phrase.strip) if (!phrase.strip.empty?)
-        phrase = ""
-        @seq2.each do |word|
-            if (!lcs.include?(word))
-                phrase += "#{word} "
-            else
-                seq2_phrases.push(phrase.strip) if (!phrase.strip.empty?)
-                phrase = ""
-            end
-        end
-
-        seq2_phrases.push(phrase.strip) if (!phrase.strip.empty?)
-
-        shorter = seq1_phrases.size
-        if (seq1_phrases.size > seq2_phrases.size)
-            shorter = seq2_phrases.size
-        end
-
         rpairs = []
-        shorter.times do |i|
-            rpairs[i] = [seq1_phrases[i], seq2_phrases[i]]
+        seq1_idx = 0
+        seq2_idx = 0
+        lcs.each do |common_word|
+           seq1_phrase = ""
+           seq2_phrase = ""
+
+           while (@seq1[seq1_idx] != common_word && seq1_idx < @seq1.size)
+               seq1_phrase += "#{@seq1[seq1_idx]} "
+               seq1_idx += 1
+           end
+
+           while (@seq2[seq2_idx] != common_word && seq2_idx < @seq2.size)
+               seq2_phrase += "#{@seq2[seq2_idx]} "
+               seq2_idx += 1
+           end
+
+           if (!seq1_phrase.empty? and !seq2_phrase.empty?)
+               rpairs.push([seq1_phrase.strip, seq2_phrase.strip])
+           end
+
+           seq1_idx += 1
+           seq2_idx += 1
         end
 
         return rpairs

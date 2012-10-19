@@ -43,6 +43,7 @@ class ProjData
         end
 
         rpair_list = {}
+        rpair_examples = {}
         @rows.each_index do |idx|
             type = @rows[idx][1]
             my_sequence = @rows[idx][2].split
@@ -95,12 +96,17 @@ class ProjData
 
                         sorted = pair.sort
                         rpair_list[compare_type] = {} if (!rpair_list[compare_type])
+                        rpair_examples[compare_type] = {} if (!rpair_examples[compare_type])
+
                         my_rpair_list = rpair_list[compare_type]
+                        my_rpair_example = rpair_examples[compare_type]
 
                         rpair_idx = sorted[0]+","+sorted[1] 
                 
                         my_rpair_list[rpair_idx] = 0 if (!my_rpair_list[rpair_idx])
                         my_rpair_list[rpair_idx] += 1
+
+                        my_rpair_example[rpair_idx] = [my_sequence.join(" "), other_sequence.join(" ")]
                     end
 	            end
             end
@@ -108,7 +114,8 @@ class ProjData
 
         rpair_list.each do |type, rpairs|
             rpairs.each do |key, val|
-                puts "#{type} - #{key} - #{val}"
+                example = rpair_examples[type][key]
+                puts "#{type},#{key},#{val},#{example[0]},#{example[1]}"
             end
         end
     end

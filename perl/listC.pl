@@ -5,11 +5,11 @@ use DBI;
 use Regexp::Common qw /comment/;
 
 # TODO: Make configurable
-my $build_proj_ids = 0;
+my $build_proj_ids = 1;
 
 # Connect to the output database
 # TODO: Make DB path configurable
-my $odbh = DBI->connect("dbi:SQLite:dbname=/scratch1/shane/cisc8xx/replication/word_seqs.db", "", "") || die "Cannot connect: $DBI::errstr";
+my $odbh = DBI->connect("dbi:SQLite:dbname=/scratch3/shane/word_seqs.db", "", "") || die "Cannot connect: $DBI::errstr";
 
 # Improve performance, sacrifice robustness
 $odbh->do("PRAGMA synchronous = OFF");
@@ -113,13 +113,14 @@ while (my ($codec, $vs) = each %clones){
 
             #Remove special characters from comment blocks
             my $commentBlocks = $comment;
-            $commentBlocks =~ s/\*|\/|}|-|=|\$|:|&|'|"|`|<|>|@|\[|\]|,|\\|{|}|\(|\)|\|//g;
+            $commentBlocks =~ s/\*|\/|}|~|\^|-|=|#|\$|:|&|'|"|`|<|>|+|@|\[|\]|,|\\|{|}|\(|\)|\|//g;
 
             #Break comment blocks into sentences
             my @sentences = split(/\. |;|!|\?/,$commentBlocks);
 
             #Split each of the sentences into words
             for my $i ( 0 .. $#sentences){
+                $sentences[$i] =~ s/\.//g;
                 my @words = split(/[\t\n\r ]+/,$sentences[$i]);
                 my $lower = lc("@words");
                 $lower =~ s/^\s+//; # remove leading spaces
