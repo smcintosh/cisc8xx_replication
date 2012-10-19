@@ -6,6 +6,7 @@ class ProjData
     @rpair_list
     @rpair_examples
     @rpair_sims
+    @sig_raised
 
     def initialize(projname, stopwords)
         @projname = projname
@@ -16,6 +17,8 @@ class ProjData
         @rpair_list = {}
         @rpair_examples = {}
         @rpair_sims = {}
+
+        @sig_raised = false
     end
 
     def add(id, type, seq)
@@ -50,6 +53,10 @@ class ProjData
         end
 
         @rows.each_index do |idx|
+            if (@sig_raised)
+                break 
+            end
+
             type = @rows[idx][1]
             my_sequence = @rows[idx][2].split
 
@@ -125,10 +132,12 @@ class ProjData
     end
 
     def print_results()
-        if (@rpair_list.size > 0)
+        if (@rpair_list.size > 0 or @sig_raised)
             $stdout.reopen("#{@projname}.log", "w")
-            puts "type,phrase1,phrase2,support,seq1,seq2,max_sim"
+            puts "ABORTED" if (@sig_raised)
+            puts "type,phrase1,phrase2,support,seq1,seq2,max_sim" if (@rpair_list.size > 0)
         end
+
         @rpair_list.each do |type, rpairs|
             rpairs.each do |key, val|
                 example = @rpair_examples[type][key]
@@ -136,5 +145,9 @@ class ProjData
                 puts "#{type},#{key},#{val},#{example[0]},#{example[1]},#{max_sim}"
             end
         end
+    end
+
+    def raise_sig()
+        @sig_raised = true
     end
 end
