@@ -113,7 +113,7 @@ while (my ($codec, $vs) = each %clones){
 
             #Remove special characters from comment blocks
             my $commentBlocks = $comment;
-            $commentBlocks =~ s/\*|\/|}|~|\^|-|=|#|\$|:|&|'|"|`|<|>|+|@|\[|\]|,|\\|{|}|\(|\)|\|//g;
+            $commentBlocks =~ s/\*|\/|}|~|\^|-|=|#|\$|:|&|'|"|`|<|>|\+|@|\[|\]|,|\\|{|}|\(|\)|\|//g;
 
             #Break comment blocks into sentences
             my @sentences = split(/\. |;|!|\?/,$commentBlocks);
