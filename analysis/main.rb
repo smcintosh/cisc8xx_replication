@@ -15,7 +15,6 @@ max_procs = 15
 # MAIN LOOP
 #
 
-num_procs = 0
 children_pids = []
 
 # Monitoring thread
@@ -27,18 +26,18 @@ Thread.new do
                 puts "Reaping PID #{pid}"
                 Process.kill("USR1", pid)
                 children_pids.delete(pid)
-                num_procs -= 1
             end
         end
     end
 end
 
 File.read("projlist").each_line do |project|
-    if (num_procs >= max_procs)
-        cpid = Process.wait
-        children_pids.delete(cpid)
+    if (children_pids.size >= max_procs)
+        begin
+            cpid = Process.wait(0)
+        end while (!children_pids.include?(cpid))
 
-        num_procs -= 1
+        children_pids.delete(cpid)
     end
 
     project = project.strip
@@ -56,12 +55,10 @@ File.read("projlist").each_line do |project|
         end
 
         db.close
-        exit
+        exit(0)
     end
     puts "Processing project: #{project} #{cpid}"
     children_pids.push(cpid)
-
-    num_procs += 1
 end
 
 Process.waitall
