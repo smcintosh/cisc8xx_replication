@@ -34,10 +34,13 @@ end
 File.read("projlist").each_line do |project|
     if (children_pids.size >= max_procs)
         begin
-            cpid = Process.wait(0)
-        end while (!children_pids.include?(cpid))
-
-        children_pids.delete(cpid)
+            begin
+                cpid = Process.wait(0)
+            end while (!children_pids.include?(cpid))
+            children_pids.delete(cpid)
+        rescue
+            # Silently continue
+        end
     end
 
     project = project.strip
