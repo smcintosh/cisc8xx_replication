@@ -63,6 +63,14 @@ my @keywords = ("abstract", "continue", "for", "new", "switch", "assert",
     "final", "interface", "static", "void", "class", "finally", "long",
     "strictfp", "volatile", "const", "float", "native", "super", "while");
 
+# Java Keywords from JavaDoc in form @keyword
+# C Keywords from Doxygen in form @keyword or \keyword
+my @structuredKeywords = ("\@param", "\@throws", "\@return", "\@see", "\@version",
+    "\@since", "\@exception", "\@serial", "\@serialField", "\@serialData", "\@link",
+    "\@deprecated", "\@author", "\@inheritDoc", "\@inherit", "\@value", "\@docRoot",
+    "\@linkplain", "\@beaninfo", "\@code", "\@literal",
+"\\addindex", "\\addtogroup", "\\anchor", "\\arg", "\\attention", "\\author", "\\authors", "\\brief", "\\bug", "\\callgraph", "\\callergraph", "\\category", "\\cite", "\\class", "\\code", "\\cond", "\\condnot", "\\copybrief", "\\copydetails", "\\copydoc", "\\copyright", "\\date", "\\def", "\\defgroup", "\\deprecated", "\\details", "\\dir", "\\dontinclude", "\\dot", "\\dotfile", "\\else", "\\elseif", "\\em", "\\endcode", "\\endcond", "\\enddot", "\\endhtmlonly", "\\endif", "\\endinternal", "\\endlatexonly", "\\endlink", "\\endmanonly", "\\endmsc", "\\endrtfonly", "\\endverbatim", "\\endxmlonly", "\\enum", "\\example", "\\exception", "\\extends", "\\file", "\\fn", "\\headerfile", "\\hideinitializer", "\\htmlinclude", "\\htmlonly", "\\if", "\\ifnot", "\\image", "\\implements", "\\include", "\\includelineno", "\\ingroup", "\\internal", "\\invariant", "\\interface", "\\latexonly", "\\li", "\\line", "\\link", "\\mainpage", "\\manonly", "\\memberof", "\\msc", "\\mscfile", "\\name", "\\namespace", "\\nosubgrouping", "\\note", "\\overload", "\\package", "\\page", "\\par", "\\paragraph", "\\param", "\\post", "\\pre", "\\private", "\\privatesection", "\\property", "\\protected", "\\protectedsection", "\\protocol", "\\public", "\\publicsection", "\\ref", "\\related", "\\relates", "\\relatedalso", "\\relatesalso", "\\remark", "\\remarks", "\\result", "\\return", "\\returns", "\\retval", "\\rtfonly", "\\sa", "\\section", "\\see", "\\short", "\\showinitializer", "\\since", "\\skip", "\\skipline", "\\snippet", "\\struct", "\\subpage", "\\subsection", "\\subsubsection", "\\tableofcontents", "\\test", "\\throw", "\\throws", "\\todo", "\\tparam", "\\typedef", "\\union", "\\until", "\\var", "\\verbatim", "\\verbinclude", "\\version", "\\warning", "\\weakgroup", "\\xmlonly", "\\xrefitem", "\@a", "\@addindex", "\@addtogroup", "\@anchor", "\@arg", "\@attention", "\@author", "\@authors", "\@b", "\@brief", "\@bug", "\@c", "\@callgraph", "\@callergraph", "\@category", "\@cite", "\@class", "\@code", "\@cond", "\@condnot", "\@copybrief", "\@copydetails", "\@copydoc", "\@copyright", "\@date", "\@def", "\@defgroup", "\@deprecated", "\@details", "\@dir", "\@dontinclude", "\@dot", "\@dotfile", "\@e", "\@else", "\@elseif", "\@em", "\@endcode", "\@endcond", "\@enddot", "\@endhtmlonly", "\@endif", "\@endinternal", "\@endlatexonly", "\@endlink", "\@endmanonly", "\@endmsc", "\@endrtfonly", "\@endverbatim", "\@endxmlonly", "\@enum", "\@example", "\@exception", "\@extends", "\@file", "\@fn", "\@headerfile", "\@hideinitializer", "\@htmlinclude", "\@htmlonly", "\@if", "\@ifnot", "\@image", "\@implements", "\@include", "\@includelineno", "\@ingroup", "\@internal", "\@invariant", "\@interface", "\@latexonly", "\@li", "\@line", "\@link", "\@mainpage", "\@manonly", "\@memberof", "\@msc", "\@mscfile", "\@n", "\@name", "\@namespace", "\@nosubgrouping", "\@note", "\@overload", "\@p", "\@package", "\@page", "\@par", "\@paragraph", "\@param", "\@post", "\@pre", "\@private", "\@privatesection", "\@property", "\@protected", "\@protectedsection", "\@protocol", "\@public", "\@publicsection", "\@ref", "\@related", "\@relates", "\@relatedalso", "\@relatesalso", "\@remark", "\@remarks", "\@result", "\@return", "\@returns", "\@retval", "\@rtfonly", "\@sa", "\@section", "\@see", "\@short", "\@showinitializer", "\@since", "\@skip", "\@skipline", "\@snippet", "\@struct", "\@subpage", "\@subsection", "\@subsubsection", "\@tableofcontents", "\@test", "\@throw", "\@throws", "\@todo", "\@tparam", "\@typedef", "\@union", "\@until", "\@var", "\@verbatim", "\@verbinclude", "\@version", "\@warning", "\@weakgroup", "\@xmlonly", "\@xrefitem");
+
 # Boilerplate for access to the .db files.
 my $b = new DB_File::HASHINFO;
 $b ->{cachesize}=1000000000;
@@ -81,7 +89,7 @@ while (my ($codec, $vs) = each %clones){
     my @dotextsplit = split(/\./, $firstfile);
     my $dotext = @dotextsplit[$#dotextsplit];
 
-   # look up id, get first file entry, check dot extention
+    # look up id, get first file entry, check dot extention
     if ($dotext eq "c" || $dotext eq "h" || $dotext eq "java") {
         my $code = decompress $codec;
 
@@ -97,36 +105,57 @@ while (my ($codec, $vs) = each %clones){
                 $lower =~ s/\s+$//; # remove trailing spaces
                 unless ($lower =~ /^\s*$/) {
                     $odbh->do("INSERT INTO word_seqs VALUES ('D', \"$vs\", \"$lower\")");
-
                 }
-        	}
+         	}
     	}
 
     	print "$vs: comments\n";
 
-
-
-        # Looks for comments in code and break them up into words
         my @commentArray =  getComments($code);
+        my $structuredComment = 0;
 
         foreach my $comment (@commentArray){
 
-            #Remove special characters from comment blocks
-            my $commentBlocks = $comment;
-            $commentBlocks =~ s/\*|\/|}|~|\^|-|=|#|\$|:|&|'|"|`|<|>|\+|@|\[|\]|,|\\|{|}|\(|\)|\|//g;
+            #Skip commment if it is the first comment and it contains a copyright statement
+            unless (($comment == @commentArray[0]) && (index(lc($comment), "copyright") != -1)) {
 
-            #Break comment blocks into sentences
-            my @sentences = split(/\. |;|!|\?/,$commentBlocks);
+                #Identify if this is a structured comment
+                foreach my $structuredKeyword (@structuredKeywords){
+                    #If the comment contains a keyword, make note of it
+                    if (index(lc($comment), lc($structuredKeyword)) != -1) {
+                        $structuredComment = 1;
+                        #Break out of the foreach loop
+                        last;
+                    } else {
+                        $structuredComment = 0;
+                    }
+                }
 
-            #Split each of the sentences into words
-            for my $i ( 0 .. $#sentences){
-                $sentences[$i] =~ s/\.//g;
-                my @words = split(/[\t\n\r ]+/,$sentences[$i]);
-                my $lower = lc("@words");
-                $lower =~ s/^\s+//; # remove leading spaces
-                $lower =~ s/\s+$//; # remove trailing spaces
-                unless ($lower =~ /^\s*$/) {
-                    $odbh->do("INSERT INTO word_seqs VALUES ('M', \"$vs\", \"$lower\")");
+                #Remove special characters from comment blocks
+                my $commentBlocks = $comment;
+                $commentBlocks =~ s/\*|\/|}|~|\^|-|=|#|\$|:|&|'|"|`|<|>|\+|@|\[|\]|,|\\|{|}|\(|\)|\|//g;
+
+                #Break comment blocks into sentences
+                my @sentences = split(/\. |;|!|\?/,$commentBlocks);
+
+                #Split each of the sentences into words
+                for my $i ( 0 .. $#sentences){
+                    $sentences[$i] =~ s/\.//g;
+                    my @words = split(/[\t\n\r ]+/,$sentences[$i]);
+                    my $lower = lc("@words");
+                    $lower =~ s/^\s+//; # remove leading spaces
+                    $lower =~ s/\s+$//; # remove trailing spaces
+
+                    # Insert as SM if structured comment, insert as UM if unstructured comment
+                    unless ($lower =~ /^\s*$/) {
+                        if ( $structuredComment ) {
+                            $odbh->do("INSERT INTO word_seqs VALUES ('SM', \"$vs\", \"$lower\")");
+
+                        } else {
+                            $odbh->do("INSERT INTO word_seqs VALUES ('UM', \"$vs\", \"$lower\")");
+                        }
+
+                    }
                 }
             }
         }
